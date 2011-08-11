@@ -21,16 +21,29 @@ struct emu_callbacks;
 class EmulationContext
 {
 public:
+	typedef int(*HandleKeyFunc)(int sym, int mod, int scancode, uint16_t unicode, int event);
+	typedef int(*HandleDPadFunc)(int angle, int event);
+	typedef int(*HandleTouchFunc)(int dx, int dy);
+	typedef int(*HandleMouseButtonFunc)(int button, int mask, int event);
+	typedef int(*HandlePassThruButtonFunc)(int x, int y);
+
 	EmulationContext(screen_context_t context, emu_callbacks callbacks);
 	~EmulationContext();
 
 	int showConfig(screen_window_t window);
 	bool touchEvent(screen_event_t event);
+	Control *controlAt(int pos[]) const;
 
 	int loadControls(const char *filename);
-
 	void drawControls(screen_buffer_t buffer);
 
+	HandleKeyFunc handleKeyFunc() const { return m_handleKeyFunc; }
+	HandleDPadFunc handleDPadFunc() const { return m_handleDPadFunc; }
+	HandleTouchFunc handleTouchFunc() const { return m_handleTouchFunc; }
+	HandleMouseButtonFunc handleMouseButtonFunc() const { return m_handleMouseButtonFunc; }
+	HandlePassThruButtonFunc handlePassThruButtonFunc() const { return m_handlePassThruButtonFunc; }
+
+	screen_context_t screenContext() const { return m_screenContext; }
 private:
 	screen_context_t m_screenContext;
 	screen_window_t m_appWindow;
@@ -39,11 +52,11 @@ private:
 	std::vector<Control*> m_controls;
 	std::map<int, Control *> m_controlMap;
 
-	int (*m_handleKeyFunc)(int sym, int mod, int scancode, uint16_t unicode, int event);
-	int (*m_handleDPadFunc)(int angle, int event);
-	int (*m_handleTouchFunc)(int dx, int dy);
-	int (*m_handleMouseButtonFunc)(int button, int mask, int event);
-	int (*m_handlePassThruButtonFunc)(int x, int y);
+	HandleKeyFunc m_handleKeyFunc;
+	HandleDPadFunc m_handleDPadFunc;
+	HandleTouchFunc m_handleTouchFunc;
+	HandleMouseButtonFunc m_handleMouseButtonFunc;
+	HandlePassThruButtonFunc m_handlePassThruButtonFunc;
 };
 
 #endif /* EMULATE_PRIV_H_ */

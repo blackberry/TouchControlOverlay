@@ -9,6 +9,7 @@
 #define EVENTDISPATCHER_H_
 
 #include "emulate.h"
+#include "emulate_priv.h"
 
 class EventDispatcher
 {
@@ -22,6 +23,8 @@ public:
 class KeyEventDispatcher : public EventDispatcher
 {
 public:
+	typedef EmulationContext::HandleKeyFunc Callback;
+
 	enum KeyEventType {
 		KEY_DOWN = EMU_KB_DOWN,
 		KEY_UP = EMU_KB_UP
@@ -31,7 +34,7 @@ public:
 		KeyEventType event;
 	};
 
-	KeyEventDispatcher(int (*callback)(int sym, int mod, int scancode, uint16_t unicode, int event),
+	KeyEventDispatcher(Callback callback,
 			int sym, int mod, int scancode, uint16_t unicode)
 		: m_callback(callback)
 		, m_sym(sym)
@@ -43,7 +46,7 @@ public:
 	int runCallback(void *params);
 
 private:
-	int (*m_callback)(int sym, int mod, int scancode, uint16_t unicode, int event);
+	Callback m_callback;
 	int m_sym;
 	int m_mod;
 	int m_scancode;
@@ -53,6 +56,8 @@ private:
 class DPadEventDispatcher : public EventDispatcher
 {
 public:
+	typedef EmulationContext::HandleDPadFunc Callback;
+
 	enum KeyEventType {
 		DPAD_DOWN = EMU_KB_DOWN,
 		DPAD_UP = EMU_KB_UP
@@ -61,36 +66,40 @@ public:
 		int angle;
 		int event;
 	};
-	DPadEventDispatcher(int (*callback)(int angle, int event))
+	DPadEventDispatcher(Callback callback)
 		: m_callback(callback)
 	{}
 
 	int runCallback(void *params);
 
 private:
-	int (*m_callback)(int angle, int event);
+	Callback m_callback;
 };
 
 class TouchAreaEventDispatcher : public EventDispatcher
 {
 public:
+	typedef EmulationContext::HandleTouchFunc Callback;
+
 	struct TouchAreaEvent {
 		int dx;
 		int dy;
 	};
-	TouchAreaEventDispatcher(int (*callback)(int dx, int dy))
+	TouchAreaEventDispatcher(Callback callback)
 		: m_callback(callback)
 	{}
 
 	int runCallback(void *params);
 
 private:
-	int (*m_callback)(int dx, int dy);
+	Callback m_callback;
 };
 
 class MouseButtonEventDispatcher : public EventDispatcher
 {
 public:
+	typedef EmulationContext::HandleMouseButtonFunc Callback;
+
 	enum KeyEventType {
 		MOUSE_DOWN = EMU_MOUSE_BUTTON_DOWN,
 		MOUSE_UP = EMU_MOUSE_BUTTON_UP
@@ -100,7 +109,7 @@ public:
 		int event;
 	};
 
-	MouseButtonEventDispatcher(int (*callback)(int button, int mask, int event), int mask, int button)
+	MouseButtonEventDispatcher(Callback callback, int mask, int button)
 		: m_callback(callback)
 		, m_mask(mask)
 		, m_button(button)
@@ -109,7 +118,7 @@ public:
 	int runCallback(void *params);
 
 private:
-	int (*m_callback)(int button, int mask, int event);
+	Callback m_callback;
 	int m_mask;
 	int m_button;
 };
@@ -117,18 +126,20 @@ private:
 class PassThruEventDispatcher : public EventDispatcher
 {
 public:
+	typedef EmulationContext::HandlePassThruButtonFunc Callback;
+
 	struct PassThruEvent {
 		int x;
 		int y;
 	};
-	PassThruEventDispatcher(int (*callback)(int x, int y))
+	PassThruEventDispatcher(Callback callback)
 		: m_callback(callback)
 	{}
 
 	int runCallback(void *params);
 
 private:
-	int (*m_callback)(int x, int y);
+	Callback m_callback;
 };
 
 #endif /* EVENTDISPATCHER_H_ */

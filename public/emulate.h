@@ -28,11 +28,16 @@ __BEGIN_DECLS
 
 #define EMU_UNHANDLED (2)
 
+/**
+ * File version number
+ */
+#define EMU_FILE_VERSION 1
+
 struct emu_callbacks {
 	int (*handleKeyFunc)(int sym, int mod, int scancode, uint16_t unicode, int event);
 	int (*handleDPadFunc)(int angle, int event);
 	int (*handleTouchFunc)(int dx, int dy);
-	int (*handleMouseButtonFunc)(int button, int mask, int event);
+	int (*handleMouseButtonFunc)(int button, int mask, int event); // TODO: Unify keyboard mod with mouse mask
 	int (*handlePassThruButtonFunc)(int x, int y);
 };
 

@@ -25,18 +25,23 @@ public:
 
 	Control(screen_context_t context, ControlType type, int x, int y, unsigned width, unsigned height, EventDispatcher *dispatcher);
 	~Control();
+	void fill();
+	bool loadFromPNG(const char *filename);
 
 	void draw(screen_buffer_t buffer) const;
 	bool handleTouch(int type, int contactId, int pos[]);
+	bool inBounds(int pos[]) const;
+	void move(int dx, int dy, unsigned maxDimensions[]);
 
 private:
-	bool inBounds(int pos[]) const;
 
 	ControlType m_type;
 	int m_x;
 	int m_y;
 	unsigned m_width;
 	unsigned m_height;
+	unsigned m_srcWidth;
+	unsigned m_srcHeight;
 	EventDispatcher *m_dispatcher;
 
 	screen_context_t m_context;

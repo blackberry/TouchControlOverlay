@@ -13,6 +13,7 @@
 #include <bps/event.h>
 #include <bps/navigator.h>
 #include "control.h"
+#include "controlfactory.h"
 #include "configwindow.h"
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,8 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 
 #define EXTERNAL_API extern "C"
 
@@ -91,7 +94,70 @@ int EmulationContext::showConfig(screen_window_t window)
 
 int EmulationContext::loadControls(const char *filename)
 {
-#define FILE_VERSION 1
+	struct TrackedXML
+	{
+		TrackedXML()
+			: m_doc(0)
+		{}
+
+		~TrackedXML()
+		{
+			if (m_doc)
+				xmlFreeDoc(m_doc);
+			m_doc = 0;
+			xmlCleanupParser();
+		}
+		xmlDoc *m_doc;
+	} xml;
+	std::stringstream ss;
+
+	xml.m_doc = xmlReadFile(filename, NULL, 0);
+	if (xml.m_doc == NULL) {
+		fprintf(stderr, "Unable to parse control file %s\n", filename);
+		return EMU_FAILURE;
+	}
+
+	xmlNode *root = xmlDocGetRootElement(xml.m_doc);
+
+	// Check version
+	bool versionMatch = false;
+	if (root && root->properties) {
+		xmlAttr *properties = root->properties;
+		while (properties) {
+			if (!xmlStrncasecmp(properties->name, BAD_CAST "version", strlen("version"))) {
+				if (properties->children && properties->children->content) {
+					int version = 0;
+					ss.clear();
+					ss.str("");
+					ss << properties->children->content;
+					ss >> version;
+					if (version != 0 && version <= EMU_FILE_VERSION) {
+						versionMatch = true;
+					}
+				}
+				break;
+			}
+			properties = properties->next;
+		}
+	}
+
+	if (!versionMatch) {
+		fprintf(stderr, "Version mismatch\n");
+		return EMU_FAILURE;
+	}
+
+	xmlNode *cur = root->children;
+	Control *control = 0;
+	while (cur) {
+		control = ControlFactory::createControl(this, cur);
+		if (control) {
+			m_controls.push_back(control);
+		}
+		cur = cur->next;
+	}
+
+	return EMU_SUCCESS;
+#if 0
 	std::ifstream inFile(filename);
 	std::string line;
 	std::stringstream ss;
@@ -108,7 +174,7 @@ int EmulationContext::loadControls(const char *filename)
 			ss << line;
 			if (version == 0) {
 				ss >> version;
-				if (version == 0 || version > FILE_VERSION) {
+				if (version == 0 || version > EMU_FILE_VERSION) {
 					fprintf(stderr, "Version mismatch: read %d\n", version);
 					return EMU_FAILURE;
 				} else {
@@ -116,36 +182,26 @@ int EmulationContext::loadControls(const char *filename)
 				}
 			}
 			ss >> type >> x >> y >> w >> h;
-			switch (type) {
-			case Control::KEY:
-				ss >> extra[0] >> extra[1] >> extra[2] >> unicode;
-				control = new Control(m_screenContext, static_cast<Control::ControlType>(type),
-						x, y, w, h,
-						new KeyEventDispatcher(m_handleKeyFunc, extra[0], extra[1], extra[2], unicode));
-				break;
-			case Control::DPAD:
-				control = new Control(m_screenContext, static_cast<Control::ControlType>(type),
-						x, y, w, h, new DPadEventDispatcher(m_handleDPadFunc));
-				break;
-			case Control::TOUCHAREA:
-				control = new Control(m_screenContext, static_cast<Control::ControlType>(type),
-						x, y, w, h, new TouchAreaEventDispatcher(m_handleTouchFunc));
-				break;
-			case Control::MOUSEBUTTON:
-				ss >> extra[0] >> extra[1];
-				control = new Control(m_screenContext, static_cast<Control::ControlType>(type),
-						x, y, w, h, new MouseButtonEventDispatcher(m_handleMouseButtonFunc, extra[0], extra[1]));
-				break;
-			case Control::PASSTHRUBUTTON:
-				control = new Control(m_screenContext, static_cast<Control::ControlType>(type),
-						x, y, w, h, new PassThruEventDispatcher(m_handlePassThruButtonFunc));
-				break;
-			}
-			m_controls.push_back(control);
+			control = ControlFactory::createControl(this, type, x, y, w, h, ss);
+			if (control)
+				m_controls.push_back(control);
 		}
 	}
 
 	return EMU_SUCCESS;
+#endif
+}
+
+Control *EmulationContext::controlAt(int pos[]) const
+{
+	std::vector<Control *>::const_iterator iter = m_controls.begin();
+	for (; iter != m_controls.end(); iter++)
+	{
+		if ((*iter)->inBounds(pos)) {
+			return *iter;
+		}
+	}
+	return NULL;
 }
 
 bool EmulationContext::touchEvent(screen_event_t event)

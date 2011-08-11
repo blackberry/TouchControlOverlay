@@ -17,9 +17,9 @@ EmulationWindow::EmulationWindow(screen_context_t screenContext, screen_window_t
 	int rc;
 	int format = SCREEN_FORMAT_RGBA8888;
 	int usage = SCREEN_USAGE_NATIVE;
-	int size[2] = {1024, 600};
+	int size[2] = {0, 0};
 
-	rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_SIZE, size);
+	rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_BUFFER_SIZE, size);
 	if (rc) {
 		perror("screen_get_window_property_iv(size)");
 		return;

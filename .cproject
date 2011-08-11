@@ -626,6 +626,7 @@
 				</scannerConfigBuildInfo>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="com.qnx.tools.ide.qde.core.QNXProjectProperties"/>
 		</cconfiguration>
 		<cconfiguration id="com.qnx.qcc.configuration.sharedLib.debug.2076896560">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.qnx.qcc.configuration.sharedLib.debug.2076896560" moduleId="org.eclipse.cdt.core.settings" name="Device-Debug">
@@ -655,6 +656,7 @@
 								<option id="com.qnx.qcc.option.compiler.includePath.639124281" name="Include Directories (-I)" superClass="com.qnx.qcc.option.compiler.includePath" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/public}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/png/src}&quot;"/>
 								</option>
 								<inputType id="com.qnx.qcc.inputType.compiler.713592535" superClass="com.qnx.qcc.inputType.compiler"/>
 							</tool>
@@ -1255,6 +1257,7 @@
 				</scannerConfigBuildInfo>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="com.qnx.tools.ide.qde.core.QNXProjectProperties"/>
 		</cconfiguration>
 		<cconfiguration id="com.qnx.qcc.configuration.sharedLib.release.640306231">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.qnx.qcc.configuration.sharedLib.release.640306231" moduleId="org.eclipse.cdt.core.settings" name="Device-Release">
@@ -1878,6 +1881,7 @@
 				</scannerConfigBuildInfo>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+			<storageModule moduleId="com.qnx.tools.ide.qde.core.QNXProjectProperties"/>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
