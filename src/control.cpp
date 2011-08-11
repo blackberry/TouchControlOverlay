@@ -9,7 +9,7 @@
 #include "eventdispatcher.h"
 #include <math.h>
 
-#include "png.h"
+#include <png.h>
 #include <screen/screen.h>
 
 const static int pngRed = 0;
