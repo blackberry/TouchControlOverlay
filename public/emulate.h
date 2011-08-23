@@ -38,7 +38,7 @@ struct emu_callbacks {
 	int (*handleDPadFunc)(int angle, int event);
 	int (*handleTouchFunc)(int dx, int dy);
 	int (*handleMouseButtonFunc)(int button, int mask, int event); // TODO: Unify keyboard mod with mouse mask
-	int (*handlePassThruButtonFunc)(int x, int y);
+	int (*handleTapFunc)();
 };
 
 enum EmuKeyButtonState {
@@ -79,6 +79,11 @@ int emulate_loadcontrols(emu_context_t context, const char* filename);
  * NOTE: the window MUST have a window group set already.
  */
 int emulate_swipedown(emu_context_t context, screen_window_t window);
+
+/**
+ * Show overlay labels
+ */
+int emulate_showlabels(emu_context_t context, screen_window_t window);
 
 /**
  * Provide touch events

@@ -9,8 +9,10 @@
 #define CONTROL_H_
 
 #include <screen/screen.h>
+#include <vector>
 
 class EventDispatcher;
+class Label;
 
 class Control
 {
@@ -20,18 +22,24 @@ public:
 		DPAD,             // Provides angle and magnitude from center (0 east, 90 north, 180 west, 270 south)
 		TOUCHAREA,        // Used to provide relative mouse motion
 		MOUSEBUTTON,      // Used to provide mouse button state
-		PASSTHRUBUTTON    // Used for left-clicking visible buttons on screen
 	};
 
-	Control(screen_context_t context, ControlType type, int x, int y, unsigned width, unsigned height, EventDispatcher *dispatcher);
+	Control(screen_context_t context, ControlType type,
+			int x, int y, unsigned width, unsigned height,
+			EventDispatcher *dispatcher, EventDispatcher *tapDispatcher=0);
 	~Control();
 	void fill();
 	bool loadFromPNG(const char *filename);
 
 	void draw(screen_buffer_t buffer) const;
-	bool handleTouch(int type, int contactId, int pos[]);
-	bool inBounds(int pos[]) const;
+	bool handleTouch(int type, int contactId, const int pos[], long long timestamp);
+	bool handleTap(int contactId, const int pos[]);
+	bool handlesTap() const { return m_tapDispatcher != 0; }
+	bool inBounds(const int pos[]) const;
 	void move(int dx, int dy, unsigned maxDimensions[]);
+
+	void showLabel(screen_window_t window);
+	void addLabel(Label *label);
 
 private:
 
@@ -43,6 +51,7 @@ private:
 	unsigned m_srcWidth;
 	unsigned m_srcHeight;
 	EventDispatcher *m_dispatcher;
+	EventDispatcher *m_tapDispatcher;
 
 	screen_context_t m_context;
 	screen_pixmap_t m_pixmap;
@@ -50,5 +59,8 @@ private:
 
 	int m_contactId;
 	int m_lastPos[2];
+	long long m_touchDownTime;
+
+	std::vector<Label *> m_labels;
 };
 #endif /* CONTROL_H_ */

@@ -46,6 +46,12 @@ EXTERNAL_API int emulate_swipedown(emu_context_t context, screen_window_t window
 	return ctx->showConfig(window);
 }
 
+EXTERNAL_API int emulate_showlabels(emu_context_t context, screen_window_t window)
+{
+	EmulationContext *ctx = static_cast<EmulationContext *>(context);
+	return ctx->showLabels(window);
+}
+
 EXTERNAL_API int emulate_touch(emu_context_t context, screen_event_t event)
 {
 	EmulationContext *ctx = static_cast<EmulationContext *>(context);
@@ -73,7 +79,7 @@ EmulationContext::EmulationContext(screen_context_t screenContext, emu_callbacks
 	m_handleDPadFunc = callbacks.handleDPadFunc;
 	m_handleTouchFunc = callbacks.handleTouchFunc;
 	m_handleMouseButtonFunc = callbacks.handleMouseButtonFunc;
-	m_handlePassThruButtonFunc = callbacks.handlePassThruButtonFunc;
+	m_handleTapFunc = callbacks.handleTapFunc;
 }
 
 int EmulationContext::showConfig(screen_window_t window)
@@ -157,39 +163,6 @@ int EmulationContext::loadControls(const char *filename)
 	}
 
 	return EMU_SUCCESS;
-#if 0
-	std::ifstream inFile(filename);
-	std::string line;
-	std::stringstream ss;
-	Control *control = 0;
-	int type, x, y, w, h, extra[3];
-	uint16_t unicode;
-	int version = 0;
-
-	while (inFile)
-	{
-		if (getline(inFile, line)) {
-			ss.clear();
-			ss.str("");
-			ss << line;
-			if (version == 0) {
-				ss >> version;
-				if (version == 0 || version > EMU_FILE_VERSION) {
-					fprintf(stderr, "Version mismatch: read %d\n", version);
-					return EMU_FAILURE;
-				} else {
-					continue;
-				}
-			}
-			ss >> type >> x >> y >> w >> h;
-			control = ControlFactory::createControl(this, type, x, y, w, h, ss);
-			if (control)
-				m_controls.push_back(control);
-		}
-	}
-
-	return EMU_SUCCESS;
-#endif
 }
 
 Control *EmulationContext::controlAt(int pos[]) const
@@ -202,6 +175,16 @@ Control *EmulationContext::controlAt(int pos[]) const
 		}
 	}
 	return NULL;
+}
+
+int EmulationContext::showLabels(screen_window_t window)
+{
+	std::vector<Control *>::const_iterator iter = m_controls.begin();
+	for (; iter != m_controls.end(); iter++)
+	{
+		(*iter)->showLabel(window);
+	}
+	return EMU_SUCCESS;
 }
 
 bool EmulationContext::touchEvent(screen_event_t event)
@@ -223,9 +206,22 @@ bool EmulationContext::touchEvent(screen_event_t event)
     screen_get_event_property_llv(event, SCREEN_PROPERTY_TIMESTAMP, (long long*)&timestamp);
     screen_get_event_property_iv(event, SCREEN_PROPERTY_SEQUENCE_ID, (int*)&sequenceId);
 
+#if 0
+    if (type == SCREEN_EVENT_MTOUCH_TOUCH)
+    	m_touchMap[contactId].downThisFrame = true;
+    if (type == SCREEN_EVENT_MTOUCH_RELEASE && m_touchMap[contactId].downThisFrame)
+    	m_touchMap[contactId].tap = true;
+    m_touchMap[contactId].valid = true;
+    m_touchMap[contactId].pos[0] = pos[0];
+    m_touchMap[contactId].pos[1] = pos[1];
+    m_touchMap[contactId].type = type;
+    m_touchMap[contactId].timestamp = timestamp;
+
+    return true;
+#else
     Control * touchPointOwner = m_controlMap[contactId];
     if (touchPointOwner) {
-    	handled = touchPointOwner->handleTouch(type, contactId, pos);
+    	handled = touchPointOwner->handleTouch(type, contactId, pos, timestamp);
     	if (!handled)
     		m_controlMap[contactId] = 0;
     }
@@ -237,14 +233,16 @@ bool EmulationContext::touchEvent(screen_event_t event)
 			if (*iter == touchPointOwner)
 				continue; // already checked
 
-			handled |= (*iter)->handleTouch(type, contactId, pos);
+			handled |= (*iter)->handleTouch(type, contactId, pos, timestamp);
 			if (handled) {
 				m_controlMap[contactId] = (*iter);
 				break; // Only allow the first control to handle the touch.
 			}
 		}
     }
+
 	return handled;
+#endif
 }
 
 void EmulationContext::drawControls(screen_buffer_t buffer)
@@ -276,5 +274,5 @@ EmulationContext::~EmulationContext()
 	m_handleDPadFunc = 0;
 	m_handleTouchFunc = 0;
 	m_handleMouseButtonFunc = 0;
-	m_handlePassThruButtonFunc = 0;
+	m_handleTapFunc = 0;
 }

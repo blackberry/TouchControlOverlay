@@ -25,13 +25,17 @@ public:
 	typedef int(*HandleDPadFunc)(int angle, int event);
 	typedef int(*HandleTouchFunc)(int dx, int dy);
 	typedef int(*HandleMouseButtonFunc)(int button, int mask, int event);
-	typedef int(*HandlePassThruButtonFunc)(int x, int y);
+	typedef int(*HandleTapFunc)();
 
 	EmulationContext(screen_context_t context, emu_callbacks callbacks);
 	~EmulationContext();
 
+	int showLabels(screen_window_t window);
+
 	int showConfig(screen_window_t window);
 	bool touchEvent(screen_event_t event);
+	void frameStart();
+	void frameEnd();
 	Control *controlAt(int pos[]) const;
 
 	int loadControls(const char *filename);
@@ -41,7 +45,7 @@ public:
 	HandleDPadFunc handleDPadFunc() const { return m_handleDPadFunc; }
 	HandleTouchFunc handleTouchFunc() const { return m_handleTouchFunc; }
 	HandleMouseButtonFunc handleMouseButtonFunc() const { return m_handleMouseButtonFunc; }
-	HandlePassThruButtonFunc handlePassThruButtonFunc() const { return m_handlePassThruButtonFunc; }
+	HandleTapFunc handleTapFunc() const { return m_handleTapFunc; }
 
 	screen_context_t screenContext() const { return m_screenContext; }
 private:
@@ -56,7 +60,7 @@ private:
 	HandleDPadFunc m_handleDPadFunc;
 	HandleTouchFunc m_handleTouchFunc;
 	HandleMouseButtonFunc m_handleMouseButtonFunc;
-	HandlePassThruButtonFunc m_handlePassThruButtonFunc;
+	HandleTapFunc m_handleTapFunc;
 };
 
 #endif /* EMULATE_PRIV_H_ */

@@ -9,6 +9,7 @@
 #include "control.h"
 #include "eventdispatcher.h"
 #include "emulate_priv.h"
+#include "label.h"
 #include <string.h>
 
 #include <libxml/parser.h>
@@ -55,6 +56,7 @@ Control *ControlFactory::createControl(EmulationContext *context, xmlNode *node)
 	uint16_t unicode = 0;
 	int mask = 0, button = 0;
 	xmlChar *imageFile = 0;
+	int tapSensitive = 0;
 
 	if (!xmlStrncasecmp(node->name, BAD_CAST "key", strlen("key"))) {
 		type = Control::KEY;
@@ -64,8 +66,6 @@ Control *ControlFactory::createControl(EmulationContext *context, xmlNode *node)
 		type = Control::TOUCHAREA;
 	} else if (!xmlStrncasecmp(node->name, BAD_CAST "mousebutton", strlen("mousebutton"))) {
 		type = Control::MOUSEBUTTON;
-	} else if (!xmlStrncasecmp(node->name, BAD_CAST "passthru", strlen("passthru"))) {
-		type = Control::PASSTHRUBUTTON;
 	} else {
 		type = (Control::ControlType)-1;
 	}
@@ -89,6 +89,9 @@ Control *ControlFactory::createControl(EmulationContext *context, xmlNode *node)
 			getProperty(properties, "scancode", scancode);
 			getProperty(properties, "unicode", unicode);
 			break;
+		case Control::TOUCHAREA:
+			getProperty(properties, "tapSensitive", tapSensitive);
+			break;
 		case Control::MOUSEBUTTON:
 			getProperty(properties, "mask", mask);
 			getButtonProperty(properties, "button", button);
@@ -108,19 +111,47 @@ Control *ControlFactory::createControl(EmulationContext *context, xmlNode *node)
 				new DPadEventDispatcher(context->handleDPadFunc()));
 		break;
 	case Control::TOUCHAREA:
-		control = new Control(context->screenContext(), type, x, y, w, h,
-				new TouchAreaEventDispatcher(context->handleTouchFunc()));
+		if (tapSensitive > 0) {
+			control = new Control(context->screenContext(), type, x, y, w, h,
+					new TouchAreaEventDispatcher(context->handleTouchFunc()),
+					new TapDispatcher(context->handleTapFunc()));
+		} else {
+			control = new Control(context->screenContext(), type, x, y, w, h,
+					new TouchAreaEventDispatcher(context->handleTouchFunc()));
+		}
 		break;
 	case Control::MOUSEBUTTON:
 		control = new Control(context->screenContext(), type, x, y, w, h,
 				new MouseButtonEventDispatcher(context->handleMouseButtonFunc(), mask, button));
 		break;
-	case Control::PASSTHRUBUTTON:
-		control = new Control(context->screenContext(), type, x, y, w, h,
-				new PassThruEventDispatcher(context->handlePassThruButtonFunc()));
-		break;
 	default:
 		return 0;
+	}
+
+	xmlNode *child = node->children;
+	xmlChar *childImage;
+	Label *label;
+	while (child) {
+		if (!xmlStrncasecmp(child->name, BAD_CAST "label", strlen("label"))) {
+			xmlAttr *properties = child->properties;
+			childImage = 0;
+			while (properties)
+			{
+				getProperty(properties, "x", x);
+				getProperty(properties, "y", y);
+				getProperty(properties, "width", w);
+				getProperty(properties, "height", h);
+				if (!xmlStrncasecmp(properties->name, BAD_CAST "image", strlen("image"))) {
+					if (properties->children && properties->children->content)
+						childImage = properties->children->content;
+				}
+
+				properties = properties->next;
+			}
+			label = new Label(context->screenContext(), x, y, w, h, (char*)childImage);
+			control->addLabel(label);
+		}
+		child = child->next;
 	}
 
 	if (imageFile) {
@@ -157,10 +188,6 @@ Control *ControlFactory::createControl(EmulationContext *context, int controlTyp
 		ss >> extra[0] >> extra[1];
 		control = new Control(context->screenContext(), type, x, y, w, h,
 				new MouseButtonEventDispatcher(context->handleMouseButtonFunc(), extra[0], extra[1]));
-		break;
-	case Control::PASSTHRUBUTTON:
-		control = new Control(context->screenContext(), type, x, y, w, h,
-				new PassThruEventDispatcher(context->handlePassThruButtonFunc()));
 		break;
 	default:
 		return 0;

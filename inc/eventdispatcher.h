@@ -20,6 +20,20 @@ public:
 	virtual int runCallback(void *params) = 0;
 };
 
+class TapDispatcher : public EventDispatcher
+{
+public:
+	typedef EmulationContext::HandleTapFunc Callback;
+
+	TapDispatcher(Callback callback)
+		: m_callback(callback)
+	{}
+	int runCallback(void *params);
+
+private:
+	Callback m_callback;
+};
+
 class KeyEventDispatcher : public EventDispatcher
 {
 public:
@@ -121,25 +135,6 @@ private:
 	Callback m_callback;
 	int m_mask;
 	int m_button;
-};
-
-class PassThruEventDispatcher : public EventDispatcher
-{
-public:
-	typedef EmulationContext::HandlePassThruButtonFunc Callback;
-
-	struct PassThruEvent {
-		int x;
-		int y;
-	};
-	PassThruEventDispatcher(Callback callback)
-		: m_callback(callback)
-	{}
-
-	int runCallback(void *params);
-
-private:
-	Callback m_callback;
 };
 
 #endif /* EVENTDISPATCHER_H_ */

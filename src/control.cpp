@@ -7,55 +7,59 @@
 
 #include "control.h"
 #include "eventdispatcher.h"
+#include "label.h"
+#include "pngreader.h"
 #include <math.h>
 
-#include <png.h>
 #include <screen/screen.h>
 
+const static int TAP_THRESHOLD = 100000000L;
 const static int pngRed = 0;
 const static int pngGreen = 1;
 const static int pngBlue = 2;
 const static int pngAlpha = 3;
 
-struct TrackedPNG
-{
-	TrackedPNG(FILE *file)
-		: m_read(0)
-		, m_info(0)
-		, m_data(0)
-		, m_rows(0)
-		, m_buffer(0)
-		, m_width(0)
-		, m_height(0)
-		, m_stride(0)
-		, m_file(file)
-	{}
+//struct TrackedPNG
+//{
+//	TrackedPNG(FILE *file)
+//		: m_read(0)
+//		, m_info(0)
+//		, m_data(0)
+//		, m_rows(0)
+//		, m_buffer(0)
+//		, m_width(0)
+//		, m_height(0)
+//		, m_stride(0)
+//		, m_file(file)
+//	{}
+//
+//	~TrackedPNG()
+//	{
+//		delete [] m_rows;
+//		delete [] m_data;
+//
+//		if (m_read)
+//			png_destroy_read_struct(&m_read, m_info ? &m_info : (png_infopp) 0, (png_infopp) 0);
+//		if (m_buffer)
+//			screen_destroy_buffer(m_buffer);
+//		if (m_file)
+//			fclose(m_file);
+//	}
+//
+//	png_structp m_read;
+//	png_infop m_info;
+//	unsigned char* m_data;
+//	png_bytep* m_rows;
+//	screen_buffer_t m_buffer;
+//	int m_width;
+//	int m_height;
+//	int m_stride;
+//	FILE *m_file;
+//};
 
-	~TrackedPNG()
-	{
-		delete [] m_rows;
-		delete [] m_data;
-
-		if (m_read)
-			png_destroy_read_struct(&m_read, m_info ? &m_info : (png_infopp) 0, (png_infopp) 0);
-		if (m_buffer)
-			screen_destroy_buffer(m_buffer);
-		if (m_file)
-			fclose(m_file);
-	}
-
-	png_structp m_read;
-	png_infop m_info;
-	unsigned char* m_data;
-	png_bytep* m_rows;
-	screen_buffer_t m_buffer;
-	int m_width;
-	int m_height;
-	int m_stride;
-	FILE *m_file;
-};
-
-Control::Control(screen_context_t context, ControlType type, int x, int y, unsigned width, unsigned height, EventDispatcher *dispatcher)
+Control::Control(screen_context_t context, ControlType type,
+		int x, int y, unsigned width, unsigned height,
+		EventDispatcher *dispatcher, EventDispatcher *tapDispatcher)
 	: m_type(type)
 	, m_x(x)
 	, m_y(y)
@@ -64,8 +68,10 @@ Control::Control(screen_context_t context, ControlType type, int x, int y, unsig
 	, m_srcWidth(width)
 	, m_srcHeight(height)
 	, m_dispatcher(dispatcher)
+	, m_tapDispatcher(tapDispatcher)
 	, m_context(context)
 	, m_contactId(-1)
+	, m_touchDownTime(0)
 {
 	m_lastPos[0] = 0;
 	m_lastPos[1] = 0;
@@ -73,8 +79,16 @@ Control::Control(screen_context_t context, ControlType type, int x, int y, unsig
 
 Control::~Control()
 {
+	std::vector<Label *>::iterator iter = m_labels.begin();
+	while (iter != m_labels.end())
+	{
+		delete *iter;
+		iter++;
+	}
+	m_labels.clear();
 	screen_destroy_pixmap(m_pixmap);
 	delete m_dispatcher;
+	delete m_tapDispatcher;
 }
 
 void Control::fill()
@@ -112,77 +126,52 @@ bool Control::loadFromPNG(const char *filename)
 		return false;
 	}
 
-	TrackedPNG png(file);
-
-	png.m_read = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (!png.m_read) {
-		fprintf(stderr, "Failed to create PNG read struct\n");
+	PNGReader png(file, m_context);
+	if (!png.doRead())
 		return false;
-	}
 
-	png.m_info = png_create_info_struct(png.m_read);
-	if (!png.m_info) {
-		fprintf(stderr, "Failed to create PNG info struct\n");
-		return false;
-	}
+	m_srcWidth = png.m_width;
+	m_srcHeight = png.m_height;
+	m_pixmap = png.m_pixmap;
+	png.m_pixmap = 0;
+	m_buffer = png.m_buffer;
+	png.m_buffer = 0;
+//	int rc;
+//	{
+//		int format = SCREEN_FORMAT_RGBA8888;
+//		int size[2] = {png.m_width, png.m_height};
 
-	// Exception handling
-	if (setjmp(png_jmpbuf(png.m_read))) {
-		fprintf(stderr, "PNG jumped to failure\n");
-		return false;
-	}
-
-	png_init_io(png.m_read, file);
-	png_read_info(png.m_read, png.m_info);
-
-	png.m_width = png_get_image_width(png.m_read, png.m_info);
-	if (png.m_width <= 0) {
-		fprintf(stderr, "Invalid PNG width: %d\n", png.m_width);
-		return false;
-	}
-
-	png.m_height = png_get_image_height(png.m_read, png.m_info);
-	if (png.m_height <= 0) {
-		fprintf(stderr, "Invalid PNG height: %d\n", png.m_height);
-		return false;
-	}
-
-	const int channels = 4;
-	png_set_palette_to_rgb(png.m_read);
-	png_set_tRNS_to_alpha(png.m_read);
-	if (png_get_channels(png.m_read, png.m_info) < channels)
-		png_set_filler(png.m_read, 0xff, PNG_FILLER_AFTER);
-
-	png.m_data = new unsigned char[png.m_width * png.m_height * channels];
-	png.m_stride = png.m_width * channels;
-	png.m_rows = new png_bytep[png.m_height];
-
-	for (int i=png.m_height - 1; i >= 0; --i) {
-		png.m_rows[i] = (png_bytep)(png.m_data + i * png.m_stride);
-	}
-	png_read_image(png.m_read, png.m_rows);
-
-	int rc;
-	{
-		int format = SCREEN_FORMAT_RGBA8888;
-		int size[2] = {png.m_width, png.m_height};
-		m_srcWidth = png.m_width;
-		m_srcHeight = png.m_height;
-
-		rc = screen_create_pixmap(&m_pixmap, m_context); // FIXME: Check failure
-		rc = screen_set_pixmap_property_iv(m_pixmap, SCREEN_PROPERTY_FORMAT, &format);
-		rc = screen_set_pixmap_property_iv(m_pixmap, SCREEN_PROPERTY_BUFFER_SIZE, size);
-		rc = screen_create_pixmap_buffer(m_pixmap);
-
-		unsigned char *realPixels;
-		int realStride;
-		rc = screen_get_pixmap_property_pv(m_pixmap, SCREEN_PROPERTY_RENDER_BUFFERS, (void**)&m_buffer);
-		rc = screen_get_buffer_property_pv(m_buffer, SCREEN_PROPERTY_POINTER, (void **)&realPixels);
-		rc = screen_get_buffer_property_iv(m_buffer, SCREEN_PROPERTY_STRIDE, &realStride);
-		memcpy(realPixels, png.m_data, realStride * m_srcHeight);
-	}
+//
+//		rc = screen_create_pixmap(&m_pixmap, m_context); // FIXME: Check failure
+//		rc = screen_set_pixmap_property_iv(m_pixmap, SCREEN_PROPERTY_FORMAT, &format);
+//		rc = screen_set_pixmap_property_iv(m_pixmap, SCREEN_PROPERTY_BUFFER_SIZE, size);
+//		rc = screen_create_pixmap_buffer(m_pixmap);
+//
+//		unsigned char *realPixels;
+//		int realStride;
+//		rc = screen_get_pixmap_property_pv(m_pixmap, SCREEN_PROPERTY_RENDER_BUFFERS, (void**)&m_buffer);
+//		rc = screen_get_buffer_property_pv(m_buffer, SCREEN_PROPERTY_POINTER, (void **)&realPixels);
+//		rc = screen_get_buffer_property_iv(m_buffer, SCREEN_PROPERTY_STRIDE, &realStride);
+//		memcpy(realPixels, png.m_data, realStride * m_srcHeight);
+//	}
 
 	return true;
+}
+
+void Control::showLabel(screen_window_t window)
+{
+	std::vector<Label *>::iterator iter = m_labels.begin();
+	while (iter != m_labels.end())
+	{
+		(*iter)->draw(window, m_x, m_y);
+		iter++;
+	}
+}
+
+void Control::addLabel(Label *label)
+{
+	m_labels.push_back(label);
+	label->setControl(this);
 }
 
 void Control::move(int dx, int dy, unsigned maxDimensions[])
@@ -197,6 +186,12 @@ void Control::move(int dx, int dy, unsigned maxDimensions[])
 		m_x = maxDimensions[0] - m_width;
 	if (m_y + m_height >= maxDimensions[1])
 		m_y = maxDimensions[1] - m_height;
+	std::vector<Label *>::iterator iter = m_labels.begin();
+	while (iter != m_labels.end())
+	{
+		(*iter)->move(m_x, m_y);
+		iter++;
+	}
 }
 
 void Control::draw(screen_buffer_t buffer) const
@@ -212,19 +207,35 @@ void Control::draw(screen_buffer_t buffer) const
 			SCREEN_BLIT_DESTINATION_WIDTH, m_width,
 			SCREEN_BLIT_DESTINATION_HEIGHT, m_height,
 			SCREEN_BLIT_TRANSPARENCY, SCREEN_TRANSPARENCY_NONE,
-			SCREEN_BLIT_GLOBAL_ALPHA, 128,
+			SCREEN_BLIT_GLOBAL_ALPHA, 192,
 			SCREEN_BLIT_END
 	};
 	screen_blit(m_context, buffer, m_buffer, attribs);
 }
 
-bool Control::inBounds(int pos[]) const
+bool Control::inBounds(const int pos[]) const
 {
 	return (pos[0] >= m_x && pos[0] <= static_cast<int>(m_x + m_width) &&
 			pos[1] >= m_y && pos[1] <= static_cast<int>(m_y + m_height));
 }
 
-bool Control::handleTouch(int type, int contactId, int pos[])
+bool Control::handleTap(int contactId, const int pos[])
+{
+	if (!m_tapDispatcher)
+		return false;
+
+	if (m_contactId != -1) {
+		// We have a contact point set already. No taps allowed.
+		return false;
+	}
+	if (!inBounds(pos))
+		return false;
+
+	return m_tapDispatcher->runCallback(0);
+
+}
+
+bool Control::handleTouch(int type, int contactId, const int pos[], long long timestamp)
 {
 	if (m_contactId != -1 && m_contactId != contactId) {
 		// We have a contact point set and this isn't it.
@@ -259,6 +270,8 @@ bool Control::handleTouch(int type, int contactId, int pos[])
 			}
 			break;
 		case TOUCHAREA:
+			//fprintf(stderr, "Toucharea: new touch %d,%d\n", pos[0],pos[1]);
+			m_touchDownTime = timestamp;
 			m_lastPos[0] = pos[0];
 			m_lastPos[1] = pos[1];
 			break;
@@ -268,8 +281,6 @@ bool Control::handleTouch(int type, int contactId, int pos[])
 				event.event = MouseButtonEventDispatcher::MOUSE_DOWN;
 				m_dispatcher->runCallback(&event);
 			}
-			break;
-		case PASSTHRUBUTTON:
 			break;
 		default:
 			break;
@@ -313,9 +324,6 @@ bool Control::handleTouch(int type, int contactId, int pos[])
 					m_dispatcher->runCallback(&event);
 				}
 				break;
-			case PASSTHRUBUTTON:
-				// TODO: Consider if we should send the button press?
-				break;
 			default:
 				break;
 			}
@@ -347,13 +355,21 @@ bool Control::handleTouch(int type, int contactId, int pos[])
 			break;
 		case TOUCHAREA:
 			{
-				TouchAreaEventDispatcher::TouchAreaEvent event;
-				event.dx = pos[0] - m_lastPos[0];
-				event.dy = pos[1] - m_lastPos[1];
-				if (event.dx != 0 || event.dy != 0) {
-					m_dispatcher->runCallback(&event);
-					m_lastPos[0] = pos[0];
-					m_lastPos[1] = pos[1];
+				if (m_tapDispatcher && type == SCREEN_EVENT_MTOUCH_RELEASE
+						&& (timestamp - m_touchDownTime) < TAP_THRESHOLD) {
+					m_tapDispatcher->runCallback(0);
+				} else {
+					if (type == SCREEN_EVENT_MTOUCH_TOUCH)
+						m_touchDownTime = timestamp;
+
+					TouchAreaEventDispatcher::TouchAreaEvent event;
+					event.dx = pos[0] - m_lastPos[0];
+					event.dy = pos[1] - m_lastPos[1];
+					if (event.dx != 0 || event.dy != 0) {
+						m_dispatcher->runCallback(&event);
+						m_lastPos[0] = pos[0];
+						m_lastPos[1] = pos[1];
+					}
 				}
 			}
 			break;
@@ -365,20 +381,12 @@ bool Control::handleTouch(int type, int contactId, int pos[])
 				m_dispatcher->runCallback(&event);
 			}
 			break;
-		case PASSTHRUBUTTON:
-			if (type == SCREEN_EVENT_MTOUCH_RELEASE)
-			{
-				PassThruEventDispatcher::PassThruEvent event;
-				event.x = pos[0];
-				event.y = pos[1];
-				m_dispatcher->runCallback(&event);
-			}
-			break;
 		default:
 			break;
 		}
 
 		if (type == SCREEN_EVENT_MTOUCH_RELEASE) {
+			//fprintf(stderr, "Update touch - release\n");
 			m_contactId = -1;
 			return false;
 		}

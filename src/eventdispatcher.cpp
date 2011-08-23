@@ -7,6 +7,11 @@
 
 #include "eventdispatcher.h"
 
+int TapDispatcher::runCallback(void *params)
+{
+	return (*m_callback)();
+}
+
 int KeyEventDispatcher::runCallback(void *params)
 {
 	KeyEvent *event = static_cast<KeyEvent *>(params);
@@ -29,10 +34,4 @@ int MouseButtonEventDispatcher::runCallback(void *params)
 {
 	MouseButtonEvent *event = static_cast<MouseButtonEvent *>(params);
 	return (*m_callback)(m_button, m_mask, event->event);
-}
-
-int PassThruEventDispatcher::runCallback(void *params)
-{
-	PassThruEvent *event = static_cast<PassThruEvent *>(params);
-	return (*m_callback)(event->x, event->y);
 }

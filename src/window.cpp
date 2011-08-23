@@ -12,14 +12,11 @@
 
 EmulationWindow::EmulationWindow(screen_context_t screenContext, screen_window_t parent)
 	: m_context(screenContext)
+	, m_parent(0)
 {
 	m_valid = false;
-	int rc;
-	int format = SCREEN_FORMAT_RGBA8888;
-	int usage = SCREEN_USAGE_NATIVE;
-	int size[2] = {0, 0};
-
-	rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_BUFFER_SIZE, size);
+	int size[2] = {0,0};
+	int rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_BUFFER_SIZE, size);
 	if (rc) {
 		perror("screen_get_window_property_iv(size)");
 		return;
@@ -27,7 +24,26 @@ EmulationWindow::EmulationWindow(screen_context_t screenContext, screen_window_t
 	m_size[0] = size[0];
 	m_size[1] = size[1];
 
-	rc = screen_create_window_type(&m_window, screenContext, SCREEN_CHILD_WINDOW);
+	init(parent);
+}
+
+EmulationWindow::EmulationWindow(screen_context_t screenContext, int width, int height, screen_window_t parent)
+	: m_context(screenContext)
+	, m_parent(0)
+{
+	m_valid = false;
+	m_size[0] = width;
+	m_size[1] = height;
+	init(parent);
+}
+
+void EmulationWindow::init(screen_window_t parent)
+{
+	int rc;
+	int format = SCREEN_FORMAT_RGBA8888;
+	int usage = SCREEN_USAGE_NATIVE;
+
+	rc = screen_create_window_type(&m_window, m_context, SCREEN_CHILD_WINDOW);
 	if (rc) {
 		perror("screen_create_window");
 		return;
@@ -49,7 +65,7 @@ EmulationWindow::EmulationWindow(screen_context_t screenContext, screen_window_t
 		return;
 	}
 
-	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_SIZE, size);
+	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_SIZE, m_size);
 	if (rc) {
 		perror("screen_set_window_property_iv(SCREEN_PROPERTY_SIZE)");
 		screen_destroy_window(m_window);
@@ -65,27 +81,46 @@ EmulationWindow::EmulationWindow(screen_context_t screenContext, screen_window_t
 		return;
 	}
 
+	if (!setParent(parent))
+	{
+		screen_destroy_window(m_window);
+		m_window = 0;
+		return;
+	}
+
+	m_valid = true;
+}
+
+bool EmulationWindow::setParent(screen_window_t parent)
+{
+	int rc;
+	if (parent == m_parent)
+		return true;
+
 	if (parent != 0) {
 		char buffer[256] = {0};
 
 		rc = screen_get_window_property_cv(parent, SCREEN_PROPERTY_GROUP, 256, buffer);
 		if (rc) {
 			perror("screen_get_window_property_cv(SCREEN_PROPERTY_GROUP)");
-			screen_destroy_window(m_window);
-			m_window = 0;
-			return;
+			return false;
 		}
 
 		rc = screen_join_window_group(m_window, buffer);
 		if (rc) {
 			perror("screen_join_window_group");
-			screen_destroy_window(m_window);
-			m_window = 0;
-			return;
+			return false;
 		}
+		m_parent = parent;
+	} else if (m_parent) {
+		rc = screen_leave_window_group(m_window);
+		if (rc) {
+			perror("screen_leave_window_group");
+			return false;
+		}
+		m_parent = 0;
 	}
-
-	m_valid = true;
+	return true;
 }
 
 bool EmulationWindow::getPixels(screen_buffer_t *buffer, unsigned char **pixels, int *stride) const
