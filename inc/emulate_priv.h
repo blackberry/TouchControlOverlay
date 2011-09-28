@@ -26,6 +26,7 @@ public:
 	typedef int(*HandleTouchFunc)(int dx, int dy);
 	typedef int(*HandleMouseButtonFunc)(int button, int mask, int event);
 	typedef int(*HandleTapFunc)();
+	typedef int(*HandleTouchScreenFunc)(int x, int y, int tap, int hold);
 
 	EmulationContext(screen_context_t context, emu_callbacks callbacks);
 	~EmulationContext();
@@ -46,6 +47,7 @@ public:
 	HandleTouchFunc handleTouchFunc() const { return m_handleTouchFunc; }
 	HandleMouseButtonFunc handleMouseButtonFunc() const { return m_handleMouseButtonFunc; }
 	HandleTapFunc handleTapFunc() const { return m_handleTapFunc; }
+	HandleTouchScreenFunc handleTouchScreenFunc() const { return m_handleTouchScreenFunc; }
 
 	screen_context_t screenContext() const { return m_screenContext; }
 private:
@@ -61,6 +63,7 @@ private:
 	HandleTouchFunc m_handleTouchFunc;
 	HandleMouseButtonFunc m_handleMouseButtonFunc;
 	HandleTapFunc m_handleTapFunc;
+	HandleTouchScreenFunc m_handleTouchScreenFunc;
 };
 
 #endif /* EMULATE_PRIV_H_ */

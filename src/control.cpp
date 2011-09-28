@@ -13,7 +13,8 @@
 
 #include <screen/screen.h>
 
-const static int TAP_THRESHOLD = 100000000L;
+const static int TAP_THRESHOLD = 150000000L;
+const static int JITTER_THRESHOLD = 10;
 const static int pngRed = 0;
 const static int pngGreen = 1;
 const static int pngBlue = 2;
@@ -72,9 +73,14 @@ Control::Control(screen_context_t context, ControlType type,
 	, m_context(context)
 	, m_contactId(-1)
 	, m_touchDownTime(0)
+	, m_touchScreenStartTime(0)
+	, m_touchScreenInMoveEvent(false)
+	, m_touchScreenInHoldEvent(false)
 {
 	m_lastPos[0] = 0;
 	m_lastPos[1] = 0;
+	m_startPos[0] = 0;
+	m_startPos[1] = 0;
 }
 
 Control::~Control()
@@ -282,6 +288,11 @@ bool Control::handleTouch(int type, int contactId, const int pos[], long long ti
 				m_dispatcher->runCallback(&event);
 			}
 			break;
+		case TOUCHSCREEN:
+			m_startPos[0] = pos[0];
+			m_startPos[1] = pos[1];
+			m_touchScreenStartTime = timestamp;
+			break;
 		default:
 			break;
 		}
@@ -323,6 +334,10 @@ bool Control::handleTouch(int type, int contactId, const int pos[], long long ti
 					event.event = MouseButtonEventDispatcher::MOUSE_UP;
 					m_dispatcher->runCallback(&event);
 				}
+				break;
+			case TOUCHSCREEN:
+				m_touchScreenInHoldEvent = false;
+				m_touchScreenInMoveEvent = false;
 				break;
 			default:
 				break;
@@ -381,6 +396,35 @@ bool Control::handleTouch(int type, int contactId, const int pos[], long long ti
 				m_dispatcher->runCallback(&event);
 			}
 			break;
+		case TOUCHSCREEN:
+			{
+				TouchScreenEventDispatcher::TouchScreenEvent event;
+				event.x = pos[0];
+				event.y = pos[1];
+				event.tap = 0;
+				event.hold = 0;
+				int distance = abs(pos[0] - m_startPos[0]) + abs(pos[1] - m_startPos[1]);
+				if (!m_touchScreenInHoldEvent) {
+					if ((type == SCREEN_EVENT_MTOUCH_RELEASE)
+							&& (timestamp - m_touchScreenStartTime) < TAP_THRESHOLD
+							&& distance < JITTER_THRESHOLD) {
+						event.tap = 1;
+						m_dispatcher->runCallback(&event);
+					} else if ((type == SCREEN_EVENT_MTOUCH_MOVE)
+							&& (m_touchScreenInMoveEvent
+									|| (distance > JITTER_THRESHOLD))) {
+						m_touchScreenInMoveEvent = true;
+						m_dispatcher->runCallback(&event);
+					} else if ((type == SCREEN_EVENT_MTOUCH_MOVE)
+							&& (!m_touchScreenInMoveEvent)
+							&& (timestamp - m_touchScreenStartTime) > 2*TAP_THRESHOLD) {
+						event.hold = 1;
+						m_touchScreenInHoldEvent = true;
+						m_dispatcher->runCallback(&event);
+					}
+				}
+			}
+			break;
 		default:
 			break;
 		}
@@ -388,6 +432,8 @@ bool Control::handleTouch(int type, int contactId, const int pos[], long long ti
 		if (type == SCREEN_EVENT_MTOUCH_RELEASE) {
 			//fprintf(stderr, "Update touch - release\n");
 			m_contactId = -1;
+			m_touchScreenInHoldEvent = false;
+			m_touchScreenInMoveEvent = false;
 			return false;
 		}
 	}

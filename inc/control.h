@@ -22,6 +22,7 @@ public:
 		DPAD,             // Provides angle and magnitude from center (0 east, 90 north, 180 west, 270 south)
 		TOUCHAREA,        // Used to provide relative mouse motion
 		MOUSEBUTTON,      // Used to provide mouse button state
+		TOUCHSCREEN		  // Provides: mouse move, left click tap and right click tap-hold
 	};
 
 	Control(screen_context_t context, ControlType type,
@@ -58,8 +59,16 @@ private:
 	screen_buffer_t m_buffer;
 
 	int m_contactId;
+
+	// For touch areas
 	int m_lastPos[2];
 	long long m_touchDownTime;
+
+	// For touch screens
+	int m_startPos[2];
+	long long m_touchScreenStartTime;
+	bool m_touchScreenInMoveEvent;
+	bool m_touchScreenInHoldEvent;
 
 	std::vector<Label *> m_labels;
 };

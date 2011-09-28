@@ -39,6 +39,7 @@ struct emu_callbacks {
 	int (*handleTouchFunc)(int dx, int dy);
 	int (*handleMouseButtonFunc)(int button, int mask, int event); // TODO: Unify keyboard mod with mouse mask
 	int (*handleTapFunc)();
+	int (*handleTouchScreenFunc)(int x, int y, int tap, int hold);
 };
 
 enum EmuKeyButtonState {

@@ -66,6 +66,8 @@ Control *ControlFactory::createControl(EmulationContext *context, xmlNode *node)
 		type = Control::TOUCHAREA;
 	} else if (!xmlStrncasecmp(node->name, BAD_CAST "mousebutton", strlen("mousebutton"))) {
 		type = Control::MOUSEBUTTON;
+	} else if (!xmlStrncasecmp(node->name, BAD_CAST "touchscreen", strlen("touchscreen"))) {
+		type = Control::TOUCHSCREEN;
 	} else {
 		type = (Control::ControlType)-1;
 	}
@@ -123,6 +125,10 @@ Control *ControlFactory::createControl(EmulationContext *context, xmlNode *node)
 	case Control::MOUSEBUTTON:
 		control = new Control(context->screenContext(), type, x, y, w, h,
 				new MouseButtonEventDispatcher(context->handleMouseButtonFunc(), mask, button));
+		break;
+	case Control::TOUCHSCREEN:
+		control = new Control(context->screenContext(), type, x, y, w, h,
+				new TouchScreenEventDispatcher(context->handleTouchScreenFunc()));
 		break;
 	default:
 		return 0;

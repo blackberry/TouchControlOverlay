@@ -80,6 +80,7 @@ EmulationContext::EmulationContext(screen_context_t screenContext, emu_callbacks
 	m_handleTouchFunc = callbacks.handleTouchFunc;
 	m_handleMouseButtonFunc = callbacks.handleMouseButtonFunc;
 	m_handleTapFunc = callbacks.handleTapFunc;
+	m_handleTouchScreenFunc = callbacks.handleTouchScreenFunc;
 }
 
 int EmulationContext::showConfig(screen_window_t window)

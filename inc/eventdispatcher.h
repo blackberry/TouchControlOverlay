@@ -137,4 +137,26 @@ private:
 	int m_button;
 };
 
+class TouchScreenEventDispatcher : public EventDispatcher
+{
+public:
+	typedef EmulationContext::HandleTouchScreenFunc Callback;
+
+	TouchScreenEventDispatcher(Callback callback)
+		: m_callback(callback)
+	{}
+
+	struct TouchScreenEvent {
+		int x;
+		int y;
+		int tap;
+		int hold;
+	};
+
+	int runCallback(void *params);
+
+private:
+	Callback m_callback;
+};
+
 #endif /* EVENTDISPATCHER_H_ */

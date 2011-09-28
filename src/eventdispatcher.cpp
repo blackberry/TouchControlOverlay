@@ -35,3 +35,9 @@ int MouseButtonEventDispatcher::runCallback(void *params)
 	MouseButtonEvent *event = static_cast<MouseButtonEvent *>(params);
 	return (*m_callback)(m_button, m_mask, event->event);
 }
+
+int TouchScreenEventDispatcher::runCallback(void *params)
+{
+	TouchScreenEvent *event = static_cast<TouchScreenEvent *>(params);
+	return (*m_callback)(event->x, event->y, event->tap, event->hold);
+}
