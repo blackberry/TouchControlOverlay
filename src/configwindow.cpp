@@ -15,7 +15,7 @@
  */
 
 #include "configwindow.h"
-#include "emulate_priv.h"
+#include "touchcontroloverlay_priv.h"
 #include "control.h"
 #include <bps/bps.h>
 #include <bps/screen.h>
@@ -40,7 +40,7 @@ ConfigWindow* ConfigWindow::createConfigWindow(screen_context_t context, screen_
 	return window;
 }
 
-screen_buffer_t ConfigWindow::draw(EmulationContext *emuContext)
+screen_buffer_t ConfigWindow::draw(TCOContext *emuContext)
 {
 	screen_buffer_t buffer;
 	unsigned char *pixels;
@@ -65,12 +65,12 @@ screen_buffer_t ConfigWindow::draw(EmulationContext *emuContext)
 	return buffer;
 }
 
-void ConfigWindow::runEventLoop(EmulationContext *emuContext)
+void ConfigWindow::runEventLoop(TCOContext *emuContext)
 {
 	screen_buffer_t buffer = draw(emuContext);
 
 	bool showingWindow = true;
-	bps_initialize(NULL, NULL);
+	bps_initialize();
 	screen_request_events(m_context);
 	bps_event_t *event; // FIXME: How do we verify they ran bps_initialize?
 	screen_event_t se;
@@ -90,16 +90,15 @@ void ConfigWindow::runEventLoop(EmulationContext *emuContext)
 		bps_get_event(&event, 0);
 		while (showingWindow && event)
 		{
-			switch (bps_event_get_domain(event))
+			int domain = bps_event_get_domain(event);
+			if (domain == navigator_get_domain())
 			{
-			case BPS_EVENT_DOMAIN_NAVIGATOR:
 				if (bps_event_get_code(event) == NAVIGATOR_SWIPE_DOWN)
 					showingWindow = false;
 				else if (bps_event_get_code(event) == NAVIGATOR_EXIT) {
 					showingWindow = false;
 				}
-				break;
-			case BPS_EVENT_DOMAIN_SCREEN:
+			} else if (domain == screen_get_domain()) {
 				se = screen_event_get_event(event);
 				screen_get_event_property_iv(se, SCREEN_PROPERTY_TYPE, &eventType);
 				screen_get_event_property_iv(se, SCREEN_PROPERTY_TOUCH_ID, &contactId);
@@ -132,13 +131,8 @@ void ConfigWindow::runEventLoop(EmulationContext *emuContext)
 					fprintf(stderr, "Unknown screen event: %d\n", eventType);
 					break;
 				}
-				break;
-			default:
-				fprintf(stderr, "Unknown event domain: %d\n", bps_event_get_domain(event));
-				break;
 			}
 
-			//bps_event_destroy(event);
 			bps_get_event(&event, 0);
 		}
 

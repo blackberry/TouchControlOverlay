@@ -22,13 +22,13 @@
 #include <libxml/tree.h>
 
 class Control;
-class EmulationContext;
+class TCOContext;
 
 class ControlFactory
 {
 public:
-	static Control *createControl(EmulationContext *context, int type, int x, int y, int w, int h, std::stringstream &ss);
-	static Control *createControl(EmulationContext *context, xmlNode *node);
+	static Control *createControl(TCOContext *context, int type, int x, int y, int w, int h, std::stringstream &ss);
+	static Control *createControl(TCOContext *context, xmlNode *node);
 };
 
 #endif /* CONTROLFACTORY_H_ */

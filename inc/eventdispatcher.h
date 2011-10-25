@@ -17,8 +17,8 @@
 #ifndef EVENTDISPATCHER_H_
 #define EVENTDISPATCHER_H_
 
-#include "emulate.h"
-#include "emulate_priv.h"
+#include "touchcontroloverlay.h"
+#include "touchcontroloverlay_priv.h"
 
 class EventDispatcher
 {
@@ -32,7 +32,7 @@ public:
 class TapDispatcher : public EventDispatcher
 {
 public:
-	typedef EmulationContext::HandleTapFunc Callback;
+	typedef TCOContext::HandleTapFunc Callback;
 
 	TapDispatcher(Callback callback)
 		: m_callback(callback)
@@ -46,11 +46,11 @@ private:
 class KeyEventDispatcher : public EventDispatcher
 {
 public:
-	typedef EmulationContext::HandleKeyFunc Callback;
+	typedef TCOContext::HandleKeyFunc Callback;
 
 	enum KeyEventType {
-		KEY_DOWN = EMU_KB_DOWN,
-		KEY_UP = EMU_KB_UP
+		KEY_DOWN = TCO_KB_DOWN,
+		KEY_UP = TCO_KB_UP
 	};
 
 	struct KeyEvent {
@@ -79,11 +79,11 @@ private:
 class DPadEventDispatcher : public EventDispatcher
 {
 public:
-	typedef EmulationContext::HandleDPadFunc Callback;
+	typedef TCOContext::HandleDPadFunc Callback;
 
 	enum KeyEventType {
-		DPAD_DOWN = EMU_KB_DOWN,
-		DPAD_UP = EMU_KB_UP
+		DPAD_DOWN = TCO_KB_DOWN,
+		DPAD_UP = TCO_KB_UP
 	};
 	struct DPadEvent {
 		int angle;
@@ -102,7 +102,7 @@ private:
 class TouchAreaEventDispatcher : public EventDispatcher
 {
 public:
-	typedef EmulationContext::HandleTouchFunc Callback;
+	typedef TCOContext::HandleTouchFunc Callback;
 
 	struct TouchAreaEvent {
 		int dx;
@@ -121,11 +121,11 @@ private:
 class MouseButtonEventDispatcher : public EventDispatcher
 {
 public:
-	typedef EmulationContext::HandleMouseButtonFunc Callback;
+	typedef TCOContext::HandleMouseButtonFunc Callback;
 
 	enum KeyEventType {
-		MOUSE_DOWN = EMU_MOUSE_BUTTON_DOWN,
-		MOUSE_UP = EMU_MOUSE_BUTTON_UP
+		MOUSE_DOWN = TCO_MOUSE_BUTTON_DOWN,
+		MOUSE_UP = TCO_MOUSE_BUTTON_UP
 	};
 
 	struct MouseButtonEvent {
@@ -149,7 +149,7 @@ private:
 class TouchScreenEventDispatcher : public EventDispatcher
 {
 public:
-	typedef EmulationContext::HandleTouchScreenFunc Callback;
+	typedef TCOContext::HandleTouchScreenFunc Callback;
 
 	TouchScreenEventDispatcher(Callback callback)
 		: m_callback(callback)

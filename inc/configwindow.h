@@ -21,14 +21,14 @@
 #include "window.h"
 
 class Control;
-class EmulationContext;
+class TCOContext;
 
 class ConfigWindow : public EmulationWindow
 {
 public:
 	static ConfigWindow *createConfigWindow(screen_context_t context, screen_window_t parent=0);
 
-	void runEventLoop(EmulationContext *emuContext);
+	void runEventLoop(TCOContext *emuContext);
 
 protected:
 	ConfigWindow(screen_context_t screenContext, screen_window_t parent=0)
@@ -37,7 +37,7 @@ protected:
 	{}
 
 private:
-	screen_buffer_t draw(EmulationContext *emuContext);
+	screen_buffer_t draw(TCOContext *emuContext);
 
 	Control *m_selected;
 };

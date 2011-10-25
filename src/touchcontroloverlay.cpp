@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "emulate.h"
-#include "emulate_priv.h"
+#include "touchcontroloverlay.h"
+#include "touchcontroloverlay_priv.h"
 #include "eventdispatcher.h"
 #include <bps/bps.h>
 #include <bps/screen.h>
@@ -36,49 +36,49 @@
 
 #define EXTERNAL_API extern "C"
 
-EXTERNAL_API int emulate_initialize(emu_context_t *context, screen_context_t screenContext, emu_callbacks callbacks)
+EXTERNAL_API int tco_initialize(tco_context_t *context, screen_context_t screenContext, tco_callbacks callbacks)
 {
-	EmulationContext *emuContext = new EmulationContext(screenContext, callbacks);
+	TCOContext *emuContext = new TCOContext(screenContext, callbacks);
 	*context = (void*)emuContext;
-	return EMU_SUCCESS;
+	return TCO_SUCCESS;
 }
 
-EXTERNAL_API int emulate_loadcontrols(emu_context_t context, const char* filename)
+EXTERNAL_API int tco_loadcontrols(tco_context_t context, const char* filename)
 {
-	EmulationContext *ctx = static_cast<EmulationContext *>(context);
+	TCOContext *ctx = static_cast<TCOContext *>(context);
 	return ctx->loadControls(filename);
 }
 
-EXTERNAL_API int emulate_swipedown(emu_context_t context, screen_window_t window)
+EXTERNAL_API int tco_swipedown(tco_context_t context, screen_window_t window)
 {
-	EmulationContext *ctx = static_cast<EmulationContext *>(context);
+	TCOContext *ctx = static_cast<TCOContext *>(context);
 	return ctx->showConfig(window);
 }
 
-EXTERNAL_API int emulate_showlabels(emu_context_t context, screen_window_t window)
+EXTERNAL_API int tco_showlabels(tco_context_t context, screen_window_t window)
 {
-	EmulationContext *ctx = static_cast<EmulationContext *>(context);
+	TCOContext *ctx = static_cast<TCOContext *>(context);
 	return ctx->showLabels(window);
 }
 
-EXTERNAL_API int emulate_touch(emu_context_t context, screen_event_t event)
+EXTERNAL_API int tco_touch(tco_context_t context, screen_event_t event)
 {
-	EmulationContext *ctx = static_cast<EmulationContext *>(context);
+	TCOContext *ctx = static_cast<TCOContext *>(context);
 	bool handled = ctx->touchEvent(event);
 	if (handled)
-		return EMU_SUCCESS;
+		return TCO_SUCCESS;
 	else
-		return EMU_UNHANDLED;
+		return TCO_UNHANDLED;
 }
 
-EXTERNAL_API void emulate_shutdown(emu_context_t context)
+EXTERNAL_API void tco_shutdown(tco_context_t context)
 {
-	EmulationContext *ctx = static_cast<EmulationContext *>(context);
+	TCOContext *ctx = static_cast<TCOContext *>(context);
 	delete ctx;
 	ctx = 0;
 }
 
-EmulationContext::EmulationContext(screen_context_t screenContext, emu_callbacks callbacks)
+TCOContext::TCOContext(screen_context_t screenContext, tco_callbacks callbacks)
 {
 	m_screenContext = screenContext;
 	m_appWindow = 0;
@@ -92,23 +92,23 @@ EmulationContext::EmulationContext(screen_context_t screenContext, emu_callbacks
 	m_handleTouchScreenFunc = callbacks.handleTouchScreenFunc;
 }
 
-int EmulationContext::showConfig(screen_window_t window)
+int TCOContext::showConfig(screen_window_t window)
 {
 	m_appWindow = window;
 
 	if (!m_configWindow) {
 		m_configWindow = ConfigWindow::createConfigWindow(m_screenContext, window);
 		if (!m_configWindow) {
-			return EMU_FAILURE;
+			return TCO_FAILURE;
 		}
 		m_configWindow->runEventLoop(this);
 		delete m_configWindow;
 		m_configWindow = 0;
 	}
-	return EMU_SUCCESS;
+	return TCO_SUCCESS;
 }
 
-int EmulationContext::loadControls(const char *filename)
+int TCOContext::loadControls(const char *filename)
 {
 	struct TrackedXML
 	{
@@ -130,7 +130,7 @@ int EmulationContext::loadControls(const char *filename)
 	xml.m_doc = xmlReadFile(filename, NULL, 0);
 	if (xml.m_doc == NULL) {
 		fprintf(stderr, "Unable to parse control file %s\n", filename);
-		return EMU_FAILURE;
+		return TCO_FAILURE;
 	}
 
 	xmlNode *root = xmlDocGetRootElement(xml.m_doc);
@@ -147,7 +147,7 @@ int EmulationContext::loadControls(const char *filename)
 					ss.str("");
 					ss << properties->children->content;
 					ss >> version;
-					if (version != 0 && version <= EMU_FILE_VERSION) {
+					if (version != 0 && version <= TCO_FILE_VERSION) {
 						versionMatch = true;
 					}
 				}
@@ -159,7 +159,7 @@ int EmulationContext::loadControls(const char *filename)
 
 	if (!versionMatch) {
 		fprintf(stderr, "Version mismatch\n");
-		return EMU_FAILURE;
+		return TCO_FAILURE;
 	}
 
 	xmlNode *cur = root->children;
@@ -172,10 +172,10 @@ int EmulationContext::loadControls(const char *filename)
 		cur = cur->next;
 	}
 
-	return EMU_SUCCESS;
+	return TCO_SUCCESS;
 }
 
-Control *EmulationContext::controlAt(int pos[]) const
+Control *TCOContext::controlAt(int pos[]) const
 {
 	std::vector<Control *>::const_iterator iter = m_controls.begin();
 	for (; iter != m_controls.end(); iter++)
@@ -187,17 +187,17 @@ Control *EmulationContext::controlAt(int pos[]) const
 	return NULL;
 }
 
-int EmulationContext::showLabels(screen_window_t window)
+int TCOContext::showLabels(screen_window_t window)
 {
 	std::vector<Control *>::const_iterator iter = m_controls.begin();
 	for (; iter != m_controls.end(); iter++)
 	{
 		(*iter)->showLabel(window);
 	}
-	return EMU_SUCCESS;
+	return TCO_SUCCESS;
 }
 
-bool EmulationContext::touchEvent(screen_event_t event)
+bool TCOContext::touchEvent(screen_event_t event)
 {
 	int type;
     int contactId;
@@ -255,7 +255,7 @@ bool EmulationContext::touchEvent(screen_event_t event)
 #endif
 }
 
-void EmulationContext::drawControls(screen_buffer_t buffer)
+void TCOContext::drawControls(screen_buffer_t buffer)
 {
 	std::vector<Control *>::iterator iter = m_controls.begin();
 	while (iter != m_controls.end())
@@ -265,7 +265,7 @@ void EmulationContext::drawControls(screen_buffer_t buffer)
 	}
 }
 
-EmulationContext::~EmulationContext()
+TCOContext::~TCOContext()
 {
 	m_appWindow = 0;
 	delete m_configWindow;

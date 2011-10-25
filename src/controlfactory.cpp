@@ -17,7 +17,7 @@
 #include "controlfactory.h"
 #include "control.h"
 #include "eventdispatcher.h"
-#include "emulate_priv.h"
+#include "touchcontroloverlay_priv.h"
 #include "label.h"
 #include <string.h>
 
@@ -43,11 +43,11 @@ bool getButtonProperty(xmlAttr *properties, const char *propertyName, int& value
 	if (!xmlStrncasecmp(properties->name, BAD_CAST propertyName, strlen(propertyName))) {
 		if (properties->children && properties->children->content) {
 			if (!xmlStrncasecmp(properties->children->content, BAD_CAST "left", strlen("left"))) {
-				value = EMU_MOUSE_LEFT_BUTTON;
+				value = TCO_MOUSE_LEFT_BUTTON;
 			} else if (!xmlStrncasecmp(properties->children->content, BAD_CAST "right", strlen("right"))) {
-				value = EMU_MOUSE_RIGHT_BUTTON;
+				value = TCO_MOUSE_RIGHT_BUTTON;
 			} else if (!xmlStrncasecmp(properties->children->content, BAD_CAST "middle", strlen("middle"))) {
-				value = EMU_MOUSE_MIDDLE_BUTTON;
+				value = TCO_MOUSE_MIDDLE_BUTTON;
 			} else
 				return false;
 			return true;
@@ -56,7 +56,7 @@ bool getButtonProperty(xmlAttr *properties, const char *propertyName, int& value
 	return false;
 }
 
-Control *ControlFactory::createControl(EmulationContext *context, xmlNode *node)
+Control *ControlFactory::createControl(TCOContext *context, xmlNode *node)
 {
 	Control::ControlType type = Control::KEY;
 	int x = 0, y = 0;
@@ -178,7 +178,7 @@ Control *ControlFactory::createControl(EmulationContext *context, xmlNode *node)
 	return control;
 }
 
-Control *ControlFactory::createControl(EmulationContext *context, int controlType, int x, int y, int w, int h, std::stringstream &ss)
+Control *ControlFactory::createControl(TCOContext *context, int controlType, int x, int y, int w, int h, std::stringstream &ss)
 {
 	int extra[3];
 	uint16_t unicode;

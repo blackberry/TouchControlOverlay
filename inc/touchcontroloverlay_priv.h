@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef EMULATE_PRIV_H_
-#define EMULATE_PRIV_H_
+#ifndef TOUCHCONTROLOVERLAY_PRIV_H_
+#define TOUCHCONTROLOVERLAY_PRIV_H_
 
 #include <map>
 #include <vector>
@@ -25,9 +25,9 @@
 class Control;
 class ConfigWindow;
 
-struct emu_callbacks;
+struct tco_callbacks;
 
-class EmulationContext
+class TCOContext
 {
 public:
 	typedef int(*HandleKeyFunc)(int sym, int mod, int scancode, uint16_t unicode, int event);
@@ -37,8 +37,8 @@ public:
 	typedef int(*HandleTapFunc)();
 	typedef int(*HandleTouchScreenFunc)(int x, int y, int tap, int hold);
 
-	EmulationContext(screen_context_t context, emu_callbacks callbacks);
-	~EmulationContext();
+	TCOContext(screen_context_t context, tco_callbacks callbacks);
+	~TCOContext();
 
 	int showLabels(screen_window_t window);
 
@@ -75,4 +75,4 @@ private:
 	HandleTouchScreenFunc m_handleTouchScreenFunc;
 };
 
-#endif /* EMULATE_PRIV_H_ */
+#endif /* TOUCHCONTROLOVERLAY_PRIV_H_ */
