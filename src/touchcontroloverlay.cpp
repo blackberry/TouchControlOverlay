@@ -49,6 +49,12 @@ EXTERNAL_API int tco_loadcontrols(tco_context_t context, const char* filename)
 	return ctx->loadControls(filename);
 }
 
+EXTERNAL_API int tco_loadcontrols_default(tco_context_t context)
+{
+	TCOContext *ctx = static_cast<TCOContext *>(context);
+	return ctx->loadDefaultControls();
+}
+
 EXTERNAL_API int tco_swipedown(tco_context_t context, screen_window_t window)
 {
 	TCOContext *ctx = static_cast<TCOContext *>(context);
@@ -105,6 +111,17 @@ int TCOContext::showConfig(screen_window_t window)
 		delete m_configWindow;
 		m_configWindow = 0;
 	}
+	return TCO_SUCCESS;
+}
+
+int TCOContext::loadDefaultControls()
+{
+	// Create a single 1024x600 touch screen.
+	Control *control = new Control(m_screenContext,
+			Control::TOUCHSCREEN, 0, 0, 1024, 600,
+			new TouchScreenEventDispatcher(m_handleTouchScreenFunc), 0);
+	control->fill();
+	m_controls.push_back(control);
 	return TCO_SUCCESS;
 }
 

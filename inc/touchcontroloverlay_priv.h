@@ -49,6 +49,7 @@ public:
 	Control *controlAt(int pos[]) const;
 
 	int loadControls(const char *filename);
+	int loadDefaultControls();
 	void drawControls(screen_buffer_t buffer);
 
 	HandleKeyFunc handleKeyFunc() const { return m_handleKeyFunc; }

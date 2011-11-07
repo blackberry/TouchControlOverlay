@@ -85,6 +85,11 @@ int tco_initialize(tco_context_t *context, screen_context_t screenContext, struc
 int tco_loadcontrols(tco_context_t context, const char* filename);
 
 /**
+ * Load default controls as a fallback.
+ */
+int tco_loadcontrols_default(tco_context_t context);
+
+/**
  * Show configuration window
  * NOTE: the window MUST have a window group set already.
  */
