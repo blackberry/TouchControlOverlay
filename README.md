@@ -1,7 +1,7 @@
 # TouchControlOverlay
 
 The _**TouchControlOverlay**_ repository holds the sources for a simple translation layer from PlayBook touch inputs to mouse and keyboard events designed to simplify porting to the BlackBerry © Tablet OS.
-
+For information on how to use it in your own projects, see the [Wiki](https://github.com/blackberry/TouchControlOverlay/wiki).
 
 **Repository Committers** 
 
