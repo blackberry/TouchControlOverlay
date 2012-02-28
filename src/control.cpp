@@ -19,6 +19,7 @@
 #include "label.h"
 #include "pngreader.h"
 #include <math.h>
+#include <stdlib.h>
 
 #include <screen/screen.h>
 
