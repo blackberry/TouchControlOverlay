@@ -4,7 +4,7 @@ endif
 include $(QCONFIG)
 
 define PINFO
-PINFO DESCRIPTION=Library for manipulating touchscreen
+PINFO DESCRIPTION=Library that is used to convert touch screen input into other forms of input
 endef
 
 NAME=TouchControlOverlay
