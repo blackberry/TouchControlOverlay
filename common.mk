@@ -13,6 +13,6 @@ PUBLIC_INCVPATH = $(PROJECT_ROOT)/public
 EXTRA_INCVPATH = $(PROJECT_ROOT)/inc
 EXTRA_SRCVPATH = $(PROJECT_ROOT)/src
 
-LIBS=xml2 png14
+LIBS=xml2 png14 screen bps m
 
 include $(MKFILES_ROOT)/qtargets.mk
