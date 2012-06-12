@@ -50,7 +50,7 @@ void EmulationWindow::init(screen_window_t parent)
 {
 	int rc;
 	int format = SCREEN_FORMAT_RGBA8888;
-	int usage = SCREEN_USAGE_NATIVE;
+	int usage = SCREEN_USAGE_NATIVE | SCREEN_USAGE_READ | SCREEN_USAGE_WRITE;
 
 	rc = screen_create_window_type(&m_window, m_context, SCREEN_CHILD_WINDOW);
 	if (rc) {
@@ -134,6 +134,9 @@ bool EmulationWindow::setParent(screen_window_t parent)
 
 bool EmulationWindow::getPixels(screen_buffer_t *buffer, unsigned char **pixels, int *stride) const
 {
+	if (!m_valid)
+		return false;
+
 	screen_buffer_t buffers[2];
 	int rc = screen_get_window_property_pv(m_window,
 			SCREEN_PROPERTY_RENDER_BUFFERS, (void**)buffers);
@@ -149,11 +152,17 @@ bool EmulationWindow::getPixels(screen_buffer_t *buffer, unsigned char **pixels,
 		return false;
 	}
 
+	if (!*pixels) {
+		fprintf(stderr, "Window buffer has no accessible pixels\n");
+		return false;
+	}
+
 	rc = screen_get_buffer_property_iv(*buffer, SCREEN_PROPERTY_STRIDE, stride);
 	if (rc) {
 		fprintf(stderr, "Cannot get stride: %s", strerror(errno));
 		return false;
 	}
+
 	return true;
 }
 
