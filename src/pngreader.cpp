@@ -91,8 +91,11 @@ bool PNGReader::doRead()
 	png_set_palette_to_rgb(m_read);
 	png_set_tRNS_to_alpha(m_read);
 	png_set_bgr(m_read);
-	//if (png_get_channels(m_read, m_info) < channels)
-	//	png_set_filler(m_read, 0xff, PNG_FILLER_AFTER);
+	png_set_expand(m_read);
+	png_set_strip_16(m_read);
+	png_set_gray_to_rgb(m_read);
+	if (png_get_channels(m_read, m_info) < channels)
+		png_set_filler(m_read, 0xff, PNG_FILLER_AFTER);
 
 	m_data = new unsigned char[m_width * m_height * channels];
 	m_stride = m_width * channels;
