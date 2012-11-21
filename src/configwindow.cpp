@@ -108,7 +108,7 @@ void ConfigWindow::runEventLoop(TCOContext *emuContext)
 					screen_get_event_property_iv(se, SCREEN_PROPERTY_TOUCH_ID, &contactId);
 					if (contactId == 0 && !touching && !releasedThisRound) {
 						touching = true;
-						screen_get_event_property_iv(se, SCREEN_PROPERTY_POSITION, startPos);
+						screen_get_event_property_iv(se, SCREEN_PROPERTY_SOURCE_POSITION, startPos);
 						endPos[0] = startPos[0];
 						endPos[1] = startPos[1];
 					}
@@ -116,7 +116,7 @@ void ConfigWindow::runEventLoop(TCOContext *emuContext)
 				case SCREEN_EVENT_MTOUCH_MOVE:
 					screen_get_event_property_iv(se, SCREEN_PROPERTY_TOUCH_ID, &contactId);
 					if (contactId == 0 && touching) {
-						screen_get_event_property_iv(se, SCREEN_PROPERTY_POSITION, endPos);
+						screen_get_event_property_iv(se, SCREEN_PROPERTY_SOURCE_POSITION, endPos);
 					}
 					break;
 				case SCREEN_EVENT_MTOUCH_RELEASE:
@@ -124,7 +124,7 @@ void ConfigWindow::runEventLoop(TCOContext *emuContext)
 					if (contactId == 0 && touching) {
 						touching = false;
 						releasedThisRound = true;
-						screen_get_event_property_iv(se, SCREEN_PROPERTY_POSITION, endPos);
+						screen_get_event_property_iv(se, SCREEN_PROPERTY_SOURCE_POSITION, endPos);
 					}
 					break;
 				default:

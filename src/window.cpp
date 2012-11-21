@@ -30,6 +30,7 @@ EmulationWindow::EmulationWindow(screen_context_t screenContext, screen_window_t
 		perror("screen_get_window_property_iv(size)");
 		return;
 	}
+
 	m_size[0] = size[0];
 	m_size[1] = size[1];
 
@@ -51,6 +52,7 @@ void EmulationWindow::init(screen_window_t parent)
 	int rc;
 	int format = SCREEN_FORMAT_RGBA8888;
 	int usage = SCREEN_USAGE_NATIVE | SCREEN_USAGE_READ | SCREEN_USAGE_WRITE;
+	int temp[2];
 
 	rc = screen_create_window_type(&m_window, m_context, SCREEN_CHILD_WINDOW);
 	if (rc) {
@@ -74,9 +76,41 @@ void EmulationWindow::init(screen_window_t parent)
 		return;
 	}
 
-	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_SIZE, m_size);
+	rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_SIZE, temp);
+	if (rc) {
+		perror("screen_get_window_property_iv(SCREEN_PROPERTY_SIZE)");
+		screen_destroy_window(m_window);
+		m_window = 0;
+		return;
+	}
+
+	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_SIZE, temp);
 	if (rc) {
 		perror("screen_set_window_property_iv(SCREEN_PROPERTY_SIZE)");
+		screen_destroy_window(m_window);
+		m_window = 0;
+		return;
+	}
+
+	rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_POSITION, temp);
+	if (rc) {
+		perror("screen_get_window_property_iv(SCREEN_PROPERTY_POSITION)");
+		screen_destroy_window(m_window);
+		m_window = 0;
+		return;
+	}
+
+	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_POSITION, temp);
+	if (rc) {
+		perror("screen_set_window_property_iv(SCREEN_PROPERTY_POSITION)");
+		screen_destroy_window(m_window);
+		m_window = 0;
+		return;
+	}
+
+	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_BUFFER_SIZE, m_size);
+	if (rc) {
+		perror("screen_set_window_property_iv(SCREEN_PROPERTY_BUFFER_SIZE)");
 		screen_destroy_window(m_window);
 		m_window = 0;
 		return;
