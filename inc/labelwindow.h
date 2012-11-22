@@ -34,7 +34,15 @@ public:
 protected:
 	LabelWindow(screen_context_t screenContext, int width, int height)
 		: EmulationWindow(screenContext, width, height)
-	{}
+	{
+		m_offset[0] = 0;
+		m_offset[1] = 0;
+		m_scale[0] = 1.0f;
+		m_scale[1] = 1.0f;
+	}
+private:
+	int m_offset[2];
+	float m_scale[2];
 };
 
 #endif /* LABELWINDOW_H_ */

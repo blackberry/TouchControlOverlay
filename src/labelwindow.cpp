@@ -71,12 +71,27 @@ void LabelWindow::draw(PNGReader &reader)
 
 void LabelWindow::showAt(screen_window_t parent, int x, int y)
 {
-	move(x, y);
+	int rc = 0;
+
+	if (parent && parent != m_parent) {
+		int parentBufferSize[2];
+		int parentSize[2];
+		rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_POSITION, m_offset);
+		rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_BUFFER_SIZE, parentBufferSize);
+		rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_SIZE, parentSize);
+		m_scale[0] = parentSize[0] / (float)parentBufferSize[0];
+		m_scale[1] = parentSize[1] / (float)parentBufferSize[1];
+		int newSize[] = {m_size[0] * m_scale[0], m_size[1] * m_scale[1]};
+		rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_SIZE, newSize);
+	}
+
 	if (!setParent(parent))
 		return;
 
+	move(x, y);
+
 	int visible = 1;
-	int rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_VISIBLE, &visible);
+	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_VISIBLE, &visible);
 	if (rc) {
 		perror("set label window visible: ");
 	}
@@ -84,7 +99,7 @@ void LabelWindow::showAt(screen_window_t parent, int x, int y)
 
 void LabelWindow::move(int x, int y)
 {
-	int position[] = {x, y};
+	int position[] = {m_offset[0] + (x * m_scale[0]), m_offset[1] + (y * m_scale[1])};
 	int rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_POSITION, position);
 	if (rc) {
 		perror("LabelWindow set position: ");

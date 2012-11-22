@@ -76,36 +76,46 @@ void EmulationWindow::init(screen_window_t parent)
 		return;
 	}
 
-	rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_SIZE, temp);
-	if (rc) {
-		perror("screen_get_window_property_iv(SCREEN_PROPERTY_SIZE)");
-		screen_destroy_window(m_window);
-		m_window = 0;
-		return;
-	}
+	if (parent) {
+		rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_SIZE, temp);
+		if (rc) {
+			perror("screen_get_window_property_iv(SCREEN_PROPERTY_SIZE)");
+			screen_destroy_window(m_window);
+			m_window = 0;
+			return;
+		}
 
-	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_SIZE, temp);
-	if (rc) {
-		perror("screen_set_window_property_iv(SCREEN_PROPERTY_SIZE)");
-		screen_destroy_window(m_window);
-		m_window = 0;
-		return;
-	}
+		rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_SIZE, temp);
+		if (rc) {
+			perror("screen_set_window_property_iv(SCREEN_PROPERTY_SIZE)");
+			screen_destroy_window(m_window);
+			m_window = 0;
+			return;
+		}
 
-	rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_POSITION, temp);
-	if (rc) {
-		perror("screen_get_window_property_iv(SCREEN_PROPERTY_POSITION)");
-		screen_destroy_window(m_window);
-		m_window = 0;
-		return;
-	}
+		rc = screen_get_window_property_iv(parent, SCREEN_PROPERTY_POSITION, temp);
+		if (rc) {
+			perror("screen_get_window_property_iv(SCREEN_PROPERTY_POSITION)");
+			screen_destroy_window(m_window);
+			m_window = 0;
+			return;
+		}
 
-	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_POSITION, temp);
-	if (rc) {
-		perror("screen_set_window_property_iv(SCREEN_PROPERTY_POSITION)");
-		screen_destroy_window(m_window);
-		m_window = 0;
-		return;
+		rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_POSITION, temp);
+		if (rc) {
+			perror("screen_set_window_property_iv(SCREEN_PROPERTY_POSITION)");
+			screen_destroy_window(m_window);
+			m_window = 0;
+			return;
+		}
+	} else {
+		rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_SIZE, m_size);
+		if (rc) {
+			perror("screen_set_window_property_iv(SCREEN_PROPERTY_SIZE)");
+			screen_destroy_window(m_window);
+			m_window = 0;
+			return;
+		}
 	}
 
 	rc = screen_set_window_property_iv(m_window, SCREEN_PROPERTY_BUFFER_SIZE, m_size);

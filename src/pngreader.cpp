@@ -121,7 +121,10 @@ bool PNGReader::doRead()
 		rc = screen_get_pixmap_property_pv(m_pixmap, SCREEN_PROPERTY_RENDER_BUFFERS, (void**)&m_buffer);
 		rc = screen_get_buffer_property_pv(m_buffer, SCREEN_PROPERTY_POINTER, (void **)&realPixels);
 		rc = screen_get_buffer_property_iv(m_buffer, SCREEN_PROPERTY_STRIDE, &realStride);
-		memcpy(realPixels, m_data, realStride * m_height);
+
+		for (int i=0; i<m_height; i++) {
+			memcpy(realPixels + i * realStride, m_data + i * m_stride, m_stride);
+		}
 	}
 	return true;
 }
